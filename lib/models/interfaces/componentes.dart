@@ -1,0 +1,3 @@
+class Componente{
+  void mostrarInformacion()=>{};
+}
