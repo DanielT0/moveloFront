@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:movelo/providers/estadoGlobal.dart';
 import 'package:movelo/ui/home.dart';
+import 'package:movelo/ui/homeScreen.dart';
 import 'package:movelo/ui/maps.dart';
 import 'package:provider/provider.dart';
 
@@ -24,11 +25,13 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.green,
+          primaryColor: Color(0xFF0D8E53),
         ),
         initialRoute: '/',
         routes: {
           '/': (context) => Home(), // Iniciamos con Home (ui/screens/home.dart)
           '/Maps': (context) => Maps(),
+          '/HomeScreen': (context) => HomeScreen(),
         },
       ),
     );

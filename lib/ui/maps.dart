@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_map_polyutil/google_map_polyutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math' show cos, sqrt, asin;
 
@@ -16,6 +19,8 @@ class _MapsState extends State<Maps> {
   final Geolocator _geolocator = Geolocator();
 
   Position _currentPosition;
+  Position _lastPosition;
+  Position _destinationPosition;
   String _currentAddress;
 
   final startAddressController = TextEditingController();
@@ -24,12 +29,14 @@ class _MapsState extends State<Maps> {
   String _startAddress = '';
   String _destinationAddress = '';
   String _placeDistance;
+  double _distanciaRecorrida = 0;
 
   Set<Marker> markers = {};
 
   PolylinePoints polylinePoints;
   Map<PolylineId, Polyline> polylines = {};
   List<LatLng> polylineCoordinates = [];
+  List<LatLng> polylineCoordinates2 = [];
 
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -88,13 +95,14 @@ class _MapsState extends State<Maps> {
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
       setState(() {
+        _lastPosition = _currentPosition;
         _currentPosition = position;
-        print('CURRENT POS: $_currentPosition');
+        print('Posición actual: $_currentPosition');
         mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: LatLng(position.latitude, position.longitude),
-              zoom: 18.0,
+              zoom: 20.0,
             ),
           ),
         );
@@ -177,7 +185,7 @@ class _MapsState extends State<Maps> {
         markers.add(destinationMarker);
 
         print('COORDENADAS DE INICIO: $startCoordinates');
-        print('COORDENADAS DE FINA: $destinationCoordinates');
+        print('COORDENADAS DE FINA $destinationCoordinates');
 
         Position _northeastCoordinates;
         Position _southwestCoordinates;
@@ -218,7 +226,7 @@ class _MapsState extends State<Maps> {
         //   destinationCoordinates.latitude,
         //   destinationCoordinates.longitude,
         // );
-
+        _destinationPosition = destinationCoordinates;
         await _createPolylines(startCoordinates, destinationCoordinates);
 
         double totalDistance = 0.0;
@@ -226,7 +234,7 @@ class _MapsState extends State<Maps> {
         // Calculating the total distance by adding the distance
         // between small segments
         for (int i = 0; i < polylineCoordinates.length - 1; i++) {
-          totalDistance += _coordinateDistance(
+          totalDistance += await _coordinateDistance(
             polylineCoordinates[i].latitude,
             polylineCoordinates[i].longitude,
             polylineCoordinates[i + 1].latitude,
@@ -251,23 +259,42 @@ class _MapsState extends State<Maps> {
 
   // Formula for calculating distance between two coordinates
   // https://stackoverflow.com/a/54138876/11910277
-  double _coordinateDistance(lat1, lon1, lat2, lon2) {
+  Future<double> _coordinateDistance(lat1, lon1, lat2, lon2) async {
+    double distance = await _geolocator.distanceBetween(lat1, lon1, lat2, lon2);
+
     var p = 0.017453292519943295;
     var c = cos;
     var a = 0.5 -
         c((lat2 - lat1) * p) / 2 +
         c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p)) / 2;
-    return 12742 * asin(sqrt(a));
+    //distance = 12742 * asin(sqrt(a));
+    return distance / 1000;
   }
 
-  // Create the polylines for showing the route between two places
+  Future avanzarRuta() async {
+    double distance = await _geolocator.distanceBetween(
+            _currentPosition.latitude,
+            _currentPosition.longitude,
+            _lastPosition.latitude,
+            _lastPosition.longitude) /
+        1000;
+    setState(() {
+      if (distance > 0.0043) {
+        _distanciaRecorrida += distance;
+        polylineCoordinates2
+            .add(LatLng(_currentPosition.latitude, _currentPosition.longitude));
+      }
+      print("$distance la distancia recorrida es 0000: $_distanciaRecorrida");
+    });
+  }
+
   _createPolylines(Position start, Position destination) async {
     polylinePoints = PolylinePoints();
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
       "AIzaSyC7QfiXjbjxcGV3BzUC8pkoWyrP_DW9xlQ", // Google Maps API Key
       PointLatLng(start.latitude, start.longitude),
       PointLatLng(destination.latitude, destination.longitude),
-      travelMode: TravelMode.walking,
+      travelMode: TravelMode.driving,
     );
 
     if (result.points.isNotEmpty) {
@@ -279,11 +306,63 @@ class _MapsState extends State<Maps> {
     PolylineId id = PolylineId('poly');
     Polyline polyline = Polyline(
       polylineId: id,
-      color: Colors.red,
+      color: Colors.red.withOpacity(.4),
       points: polylineCoordinates,
       width: 3,
     );
     polylines[id] = polyline;
+  }
+
+  Future empezarRuta() async {
+    bool dentro = await GoogleMapPolyUtil.isLocationOnPath(
+          point: LatLng(_currentPosition.latitude, _currentPosition.longitude),
+          polygon: polylineCoordinates,
+          tolerance: 40);
+    _geolocator
+        .getPositionStream(LocationOptions(accuracy: LocationAccuracy.medium))
+        .listen((Position position){
+      if (!dentro) {
+        polylineCoordinates.clear();
+        this._createPolylines(position, _destinationPosition);
+      }
+      setState(() {
+        _currentPosition = position;
+        mapController.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 20.0,
+            ),
+          ),
+        );
+      });
+      print(_currentPosition.latitude.toString() +
+          ',' +
+          _currentPosition.longitude.toString()); // ok
+    });
+    PolylineId id = PolylineId('pol');
+    Polyline polyline = Polyline(
+      polylineId: id,
+      color: Colors.red,
+      points: polylineCoordinates2,
+      width: 5,
+    );
+    polylines[id] = polyline;
+
+    Timer.periodic(Duration(seconds: 10), (timer) {
+      _lastPosition != null
+          ? this.avanzarRuta()
+          : polylineCoordinates2.add(
+              LatLng(_currentPosition.latitude, _currentPosition.longitude));
+    });
+    mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(_currentPosition.latitude, _currentPosition.longitude),
+          zoom: 18.0,
+        ),
+      ),
+    );
   }
 
   @override
@@ -317,54 +396,7 @@ class _MapsState extends State<Maps> {
                 mapController = controller;
               },
             ),
-            // Show zoom buttons
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 10.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    ClipOval(
-                      child: Material(
-                        color: Colors.blue[100], // button color
-                        child: InkWell(
-                          splashColor: Colors.blue, // inkwell color
-                          child: SizedBox(
-                            width: 50,
-                            height: 50,
-                            child: Icon(Icons.add),
-                          ),
-                          onTap: () {
-                            mapController.animateCamera(
-                              CameraUpdate.zoomIn(),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    ClipOval(
-                      child: Material(
-                        color: Colors.blue[100], // button color
-                        child: InkWell(
-                          splashColor: Colors.blue, // inkwell color
-                          child: SizedBox(
-                            width: 50,
-                            height: 50,
-                            child: Icon(Icons.remove),
-                          ),
-                          onTap: () {
-                            mapController.animateCamera(
-                              CameraUpdate.zoomOut(),
-                            );
-                          },
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            ),
+
             // Show the place input fields & button for
             // showing the route
             SafeArea(
@@ -508,33 +540,85 @@ class _MapsState extends State<Maps> {
             // Show current location button
             SafeArea(
               child: Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 10.0, bottom: 10.0),
-                  child: ClipOval(
-                    child: Material(
-                      color: Colors.orange[100], // button color
-                      child: InkWell(
-                        splashColor: Colors.orange, // inkwell color
-                        child: SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Icon(Icons.my_location),
-                        ),
-                        onTap: () {
-                          mapController.animateCamera(
-                            CameraUpdate.newCameraPosition(
-                              CameraPosition(
-                                target: LatLng(
-                                  _currentPosition.latitude,
-                                  _currentPosition.longitude,
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: MediaQuery.of(context).size.width,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(top: 10.0, bottom: 8.0, right: 8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: ClipOval(
+                            child: Material(
+                              color: Colors.orange[100], // button color
+                              child: InkWell(
+                                splashColor: Colors.orange, // inkwell color
+                                child: SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: Icon(Icons.my_location),
                                 ),
-                                zoom: 18.0,
+                                onTap: () {
+                                  mapController.animateCamera(
+                                    CameraUpdate.newCameraPosition(
+                                      CameraPosition(
+                                        target: LatLng(
+                                          _currentPosition.latitude,
+                                          _currentPosition.longitude,
+                                        ),
+                                        zoom: 18.0,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+                        Container(
+                          height: 110,
+                          width: MediaQuery.of(context).size.width * 0.95,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              FlatButton(
+                                onPressed: empezarRuta,
+                                child: Container(
+                                  height: 50,
+                                  width: 100,
+                                  decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(30)),
+                                  child: Center(
+                                    child: Text(
+                                      "Empezar",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyText1
+                                          .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Text("Distancia recorrida: " +
+                                  _distanciaRecorrida.toStringAsFixed(2) +
+                                  "km"),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

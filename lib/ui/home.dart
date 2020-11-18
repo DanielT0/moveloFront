@@ -196,6 +196,10 @@ class _HomeState extends State<Home> {
     });
   }
 
+  void irAHome(){
+    Navigator.pushNamed(context, '/HomeScreen');
+  }
+
   void irAMapas(BuildContext context) {
     _myProvider.errorServidor = false;
     Alert(
@@ -265,7 +269,8 @@ class _HomeState extends State<Home> {
                   )
                 ],
                 type: AlertType.success,
-                desc: 'Hola de nuevo, ' + this._myProvider.biciusuarioUser.nombre)
+                desc:
+                    'Hola de nuevo, ' + this._myProvider.biciusuarioUser.nombre)
             .show();
       }
     } on Exception {
@@ -419,10 +424,15 @@ class _HomeState extends State<Home> {
       body: Stack(
         children: <Widget>[
           AnimatedContainer(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/background1.jpg"),
+                fit: BoxFit.cover
+              ),
+            ),
             duration: Duration(
               milliseconds: 500,
             ),
-            color: _backgroundColor,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
@@ -454,7 +464,7 @@ class _HomeState extends State<Home> {
                       margin: EdgeInsets.all(32),
                       padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.grey[350],
                         borderRadius: BorderRadius.circular(50),
                       ),
                       child: Center(
@@ -462,6 +472,7 @@ class _HomeState extends State<Home> {
                           "Iniciar",
                           style: TextStyle(
                             fontSize: 16,
+                            fontWeight: FontWeight.bold,
                             color: Color(0xff17183B),
                           ),
                         ),
@@ -527,7 +538,7 @@ class _HomeState extends State<Home> {
                     BotonPrincipal(
                       btnText: "Iniciar sesión",
                       activo: _enableSignButton,
-                      funcion: () => this.iniciarSesion(context),
+                      funcion: () => this.irAHome(),
                     ),
                     SizedBox(
                       height: 20,
@@ -629,8 +640,6 @@ class _HomeState extends State<Home> {
     );
   }
 }
-
-
 
 class BotonSecundario extends StatefulWidget {
   final String btnText;
