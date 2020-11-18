@@ -196,8 +196,8 @@ class _HomeState extends State<Home> {
     });
   }
 
-  void irAHome(){
-    Navigator.pushNamed(context, '/HomeScreen');
+  void irAHome() {
+    Navigator.pushNamed(context, '/Maps');
   }
 
   void irAMapas(BuildContext context) {
@@ -344,7 +344,7 @@ class _HomeState extends State<Home> {
                     ),
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/Maps');
+                      Navigator.pushNamed(context, '/HomeScreen');
                     },
                     width: 120,
                   )
@@ -426,9 +426,8 @@ class _HomeState extends State<Home> {
           AnimatedContainer(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/background1.jpg"),
-                fit: BoxFit.cover
-              ),
+                  image: AssetImage("assets/background1.jpg"),
+                  fit: BoxFit.cover),
             ),
             duration: Duration(
               milliseconds: 500,
@@ -456,10 +455,10 @@ class _HomeState extends State<Home> {
                     onTap: () {
                       irAHome();
                       //if (_current != 0) {
-                      //  _presionaOpcion(0);
-                     // } else {
-                       // _presionaOpcion(1);
-                     // }
+                      // _presionaOpcion(0);
+                      //} else {
+                      // _presionaOpcion(1);
+                      // }
                     },
                     child: Container(
                       margin: EdgeInsets.all(32),
@@ -537,10 +536,9 @@ class _HomeState extends State<Home> {
                       height: 20,
                     ),
                     BotonPrincipal(
-                      btnText: "Iniciar sesión",
-                      activo: _enableSignButton,
-                      funcion: () => this.iniciarSesion(context)
-                    ),
+                        btnText: "Iniciar sesión",
+                        activo: _enableSignButton,
+                        funcion: () => this.iniciarSesion(context)),
                     SizedBox(
                       height: 20,
                     ),

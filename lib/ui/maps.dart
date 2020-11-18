@@ -9,6 +9,12 @@ import 'package:movelo/models/registroGeografico.dart';
 import 'dart:math' show cos, sqrt, asin;
 
 import 'package:movelo/blocs/bloc.dart';
+import 'package:movelo/providers/estadoGlobal.dart';
+import 'package:movelo/ui/widgets/infoCardNoLogo.dart';
+import 'package:movelo/ui/widgets/infoCardNumbers.dart';
+import 'package:movelo/ui/widgets/infoCardRestantes.dart';
+import 'package:provider/provider.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 
 class Maps extends StatefulWidget {
   @override
@@ -46,10 +52,16 @@ class _MapsState extends State<Maps> {
   bool _rutaEscogida = false;
   bool _navegarRuta = false;
   bool _puntoInicioView = false;
+  bool _huellaCarbono = false;
 
   Timer _timer;
 
-  double containerSize = 110;
+  double containerSize = 130;
+  double _pCarro = 0; //Huellas de carbono
+  double _pMoto = 0;
+  double _pBici = 0;
+
+  EstadoGlobal proveedor;
 
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -115,7 +127,7 @@ class _MapsState extends State<Maps> {
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: LatLng(position.latitude, position.longitude),
-              zoom: 20.0,
+              zoom: 16.0,
             ),
           ),
         );
@@ -288,7 +300,7 @@ class _MapsState extends State<Maps> {
     bool dentro = await GoogleMapPolyUtil.isLocationOnPath(
         point: LatLng(_currentPosition.latitude, _currentPosition.longitude),
         polygon: polylineCoordinates,
-        tolerance: 200);
+        tolerance: 30);
     double distance = await _geolocator.distanceBetween(
             _currentPosition.latitude,
             _currentPosition.longitude,
@@ -378,11 +390,36 @@ class _MapsState extends State<Maps> {
         _lastPosition = _currentPosition;
       }
     });
+
+    if (proveedor.metaArbol <= (_distanciaRecorrida)) {
+      setState(() {
+        proveedor.metaArbol += 200;
+      });
+      Alert(
+              context: context,
+              title: ('Listo!'),
+              buttons: [
+                DialogButton(
+                  color: Colors.green,
+                  child: Text(
+                    'Vale',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  width: 120,
+                )
+              ],
+              type: AlertType.success,
+              desc: 'Se ha agregado un árbol a tus árboles por plantar')
+          .show();
+    }
     mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(_currentPosition.latitude, _currentPosition.longitude),
-          zoom: 18.0,
+          zoom: 14.0,
         ),
       ),
     );
@@ -393,6 +430,7 @@ class _MapsState extends State<Maps> {
     setState(() {
       _navegarRuta = false;
       _rutaEscogida = false;
+      _distanciaRecorrida = 0;
     });
   }
 
@@ -411,6 +449,11 @@ class _MapsState extends State<Maps> {
 
   @override
   Widget build(BuildContext context) {
+    var myProvider = Provider.of<EstadoGlobal>(context, listen: false);
+    proveedor = myProvider;
+    _pCarro = myProvider.huellaCarro * _distanciaRecorrida;
+    _pMoto = myProvider.huellaMoto * _distanciaRecorrida;
+    _pBici = myProvider.huellaBici * _distanciaRecorrida;
     var height = MediaQuery.of(context).size.height;
     var width = MediaQuery.of(context).size.width;
     return Container(
@@ -603,7 +646,7 @@ class _MapsState extends State<Maps> {
                                           _currentPosition.latitude,
                                           _currentPosition.longitude,
                                         ),
-                                        zoom: 18.0,
+                                        zoom: 14.0,
                                       ),
                                     ),
                                   );
@@ -614,7 +657,7 @@ class _MapsState extends State<Maps> {
                         ),
                         _rutaEscogida
                             ? Container(
-                                height: 110,
+                                height: 130,
                                 width: MediaQuery.of(context).size.width * 0.95,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -640,9 +683,9 @@ class _MapsState extends State<Maps> {
                                                 .textTheme
                                                 .bodyText1
                                                 .copyWith(
-                                                    color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -673,15 +716,16 @@ class _MapsState extends State<Maps> {
                             ? GestureDetector(
                                 onDoubleTap: () {
                                   setState(() {
-                                    if (containerSize == 110) {
-                                      containerSize = 300;
+                                    if (containerSize == 130) {
+                                      containerSize = 280;
                                     } else {
-                                      containerSize = 110;
+                                      containerSize = 130;
                                     }
                                   });
                                 },
                                 child: AnimatedContainer(
-                                  duration: Duration(milliseconds: 500),
+                                  padding: EdgeInsets.only(top: 20),
+                                  duration: Duration(milliseconds: 200),
                                   height: containerSize,
                                   width:
                                       MediaQuery.of(context).size.width * 0.95,
@@ -691,59 +735,194 @@ class _MapsState extends State<Maps> {
                                       Radius.circular(8.0),
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  child: ListView(
                                     children: [
-                                      FlatButton(
-                                        onPressed: () {
-                                          enviarRegistroRuta();
-                                          markers.clear();
-                                          polylines.clear();
-                                          polylineCoordinates.clear();
-                                          terminarRuta();
-                                        },
-                                        child: Container(
-                                          height: 50,
-                                          width: 100,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(30),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              "Terminar",
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyText1
-                                                  .copyWith(
-                                                      color: Colors.green,
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                       Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                            CrossAxisAlignment.center,
                                         children: [
                                           Text(
-                                            _distanciaRecorrida
-                                                    .toStringAsFixed(2) +
+                                            "Distancia recorrida: " +
+                                                _distanciaRecorrida
+                                                    .toStringAsFixed(3) +
                                                 "km",
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .headline6
                                                 .copyWith(
                                                     color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18),
                                           ),
-                                          Text("Distancia recorrida "),
                                         ],
-                                      )
+                                      ),
+                                      SizedBox(
+                                        height: 20,
+                                      ),
+                                      containerSize == 280
+                                          ? Wrap(
+                                              runSpacing: 0,
+                                              spacing: 0,
+                                              children: [
+                                                InfoCardRestantes(
+                                                  titulo: "Para próximo árbol",
+                                                  dato: myProvider
+                                                              .biciusuarioUser ==
+                                                          null
+                                                      ? myProvider.metaArbol -
+                                                          _distanciaRecorrida
+                                                      : myProvider.metaArbol -
+                                                          (_distanciaRecorrida +
+                                                              myProvider
+                                                                  .biciusuarioUser
+                                                                  .metrosRecorridos),
+                                                  unidades: "km",
+                                                  icono: Icons.nature,
+                                                  color: Colors.green,
+                                                ),
+                                                InfoCardRestantes(
+                                                  titulo:
+                                                      "Huella del recorrido",
+                                                  dato: _pBici,
+                                                  unidades: "ton",
+                                                  icono: Icons.fingerprint,
+                                                  color: Colors.purple,
+                                                ),
+                                                InfoCardNumbersNoIcon(
+                                                  titulo: "Árboles plantados",
+                                                  dato: myProvider
+                                                              .arbolesUsuario ==
+                                                          null
+                                                      ? 0
+                                                      : myProvider
+                                                          .arbolesUsuario.length
+                                                          .toDouble(),
+                                                  unidades: "árboles",
+                                                  color: Colors.green,
+                                                  icono: Icons.nature,
+                                                ),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _huellaCarbono = true;
+                                                      _navegarRuta = false;
+                                                    });
+                                                  },
+                                                  child: InfoCardNumbersNoIcon(
+                                                      titulo:
+                                                          "Huella de carbono total",
+                                                      dato: myProvider
+                                                                  .biciusuarioUser ==
+                                                              null
+                                                          ? _pBici
+                                                          : myProvider
+                                                                  .biciusuarioUser
+                                                                  .huellaCarbonoAcumulada +
+                                                              _pBici,
+                                                      unidades: "ton",
+                                                      color: Colors.purple,
+                                                      icono: Icons.fingerprint),
+                                                ),
+                                              ],
+                                            )
+                                          : Container(),
+                                      SizedBox(
+                                        height: 10,
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          FlatButton(
+                                            onPressed: () {
+                                              Alert(
+                                                      context: context,
+                                                      title: ('Listo!'),
+                                                      buttons: [
+                                                        DialogButton(
+                                                          color: Colors.green,
+                                                          child: Text(
+                                                            'Gracias',
+                                                            style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 16),
+                                                          ),
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                                context);
+                                                          },
+                                                          width: 120,
+                                                        )
+                                                      ],
+                                                      type: AlertType.success,
+                                                      desc:
+                                                          'Se ha registrado tu ruta')
+                                                  .show();
+                                              markers.clear();
+                                              polylines.clear();
+                                              polylineCoordinates.clear();
+                                              terminarRuta();
+                                            },
+                                            child: Container(
+                                              height: 40,
+                                              width: 90,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.green),
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  "Terminar",
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyText1
+                                                      .copyWith(
+                                                          color: Colors.green,
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          FlatButton(
+                                            onPressed: () {
+                                              markers.clear();
+                                              polylines.clear();
+                                              polylineCoordinates.clear();
+                                              terminarRuta();
+                                            },
+                                            child: Container(
+                                              height: 40,
+                                              width: 90,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.red),
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  "Cancelar",
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyText1
+                                                      .copyWith(
+                                                          color: Colors.red,
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -755,8 +934,162 @@ class _MapsState extends State<Maps> {
                 ),
               ),
             ),
+            _huellaCarbono == true
+                ? GestureDetector(
+                    onDoubleTap: () {
+                      setState(() {
+                        _navegarRuta = true;
+                        _huellaCarbono = false;
+                      });
+                    },
+                    child: SafeArea(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: EdgeInsets.only(
+                              left: 20, right: 20, bottom: 20, top: 10),
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          width: MediaQuery.of(context).size.width * 0.9,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                "Te presentamos datos sobre lo que aportas al ambiente al montar en bici",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyText1
+                                    .copyWith(
+                                      color: Colors.black,
+                                      fontSize: 12,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                              Container(
+                                width: double.infinity,
+                                height: 50,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      height: double.infinity,
+                                      width: 100,
+                                    ),
+                                    Expanded(
+                                      child: Container(
+                                        child: Text(
+                                          "Huella de carbono",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyText1
+                                              .copyWith(
+                                                color: Colors.black,
+                                                fontSize: 13,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Container(
+                                        child: Text(
+                                          "Incremento porcentual",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyText1
+                                              .copyWith(
+                                                color: Colors.black,
+                                                fontSize: 13,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              HuellaCarbonoCard(_pBici, 0, "assets/bici.png"),
+                              HuellaCarbonoCard(
+                                  _pCarro,
+                                  ((_pCarro / _pBici) * 100),
+                                  "assets/carro.png"),
+                              HuellaCarbonoCard(_pMoto, (_pMoto / _pBici) * 100,
+                                  "assets/moto.png"),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : Container(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class HuellaCarbonoCard extends StatelessWidget {
+  final double huellaCarbono;
+  final double porcentaje;
+  final String img;
+  HuellaCarbonoCard(this.huellaCarbono, this.porcentaje, this.img);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            height: double.infinity,
+            width: 80,
+            padding: EdgeInsets.all(10),
+            child: Image.asset(this.img),
+          ),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.only(top: 20, bottom: 30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    huellaCarbono.toStringAsFixed(2) + " g ",
+                    style: Theme.of(context).textTheme.headline6.copyWith(
+                          color: Colors.black54,
+                        ),
+                  )
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.only(top: 20, bottom: 30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    porcentaje > 100
+                        ? "+100%"
+                        : "+ " + porcentaje.toStringAsFixed(2) + " %",
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline6
+                        .copyWith(color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

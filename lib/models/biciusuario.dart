@@ -33,7 +33,7 @@ class Biciusuario extends Componente implements User{
     this._telefono = parsedJson['telefono'];
     this._huellaCarbonoAcumulada = parsedJson['huellaCarbonoAcumulada'];
     this._metrosNoPlantados = parsedJson['metrosNoPlantados'];
-    this._metrosRecorridos = parsedJson['metrosRecorridos'];
+    this._metrosRecorridos = parsedJson['kmRecorridos'];
   }
   //Getters
   int get id => this._id;

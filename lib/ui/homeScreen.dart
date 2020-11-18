@@ -1,10 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:movelo/blocs/bloc.dart';
+import 'package:movelo/models/arbol.dart';
+import 'package:movelo/providers/estadoGlobal.dart';
 import 'package:movelo/ui/constantes.dart';
 import 'package:movelo/ui/widgets/infoCard.dart';
 import 'package:movelo/ui/widgets/infoCardNumbers.dart';
 import 'package:movelo/ui/widgets/lineChart.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -12,12 +16,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  void irAHome(){
+  EstadoGlobal proveedor;
+  Bloc bloc = new Bloc();
+  List<Arbol> arbolesUsuario = [];
+  double numArbolesUsuario =0;
+  void irAHome() {
     Navigator.pushNamed(context, '/Maps');
   }
 
   @override
   Widget build(BuildContext context) {
+    var myProvider = Provider.of<EstadoGlobal>(context, listen: false);
+    proveedor = myProvider;
+
+    bloc.arbolesUser.map((object) => object.data.arboles).listen((p) {
+      // Escuchamos al stream (que no dará dato a dato el conjunto)
+      setState(() => arbolesUsuario = p); //Le asignamos el conjunto a ligas
+      print(arbolesUsuario);
+      print(arbolesUsuario[0].nombre);
+      myProvider.arbolesUsuario = arbolesUsuario;
+      numArbolesUsuario= arbolesUsuario.length == null ? 0 : arbolesUsuario.length.toDouble();
+    });
     return Scaffold(
       appBar: buildAppBar(),
       body: Column(
@@ -37,33 +56,28 @@ class _HomeScreenState extends State<HomeScreen> {
               runSpacing: 20,
               spacing: 10,
               children: [
-                InfoCard(
-                  titulo: "Kilómetros recorridos",
-                  dato: 3100,
-                  unidades: "km",
-                  icono: Icons.directions_run,
-                  color: Color(0xFFFF9C00),
-                ),
                 InfoCardNumbers(
                   titulo: "Árboles plantados",
-                  dato: 31,
+                  dato: 0,// numArbolesUsuario,
                   unidades: "árboles",
                   icono: Icons.nature,
                   color: Colors.green,
                 ),
                 InfoCardNumbers(
                   titulo: "Huella de carbono",
-                  dato: 25,
+                  dato: 0, //myProvider.biciusuarioUser.huellaCarbonoAcumulada ==null ? 0 :myProvider.biciusuarioUser.huellaCarbonoAcumulada ,
                   unidades: "ton",
                   icono: Icons.fingerprint,
                   color: Colors.purple,
                 ),
                 InfoCard(
-                  titulo: "Tiempo en bici",
-                  dato: 99,
-                  unidades: "horas",
-                  icono: Icons.timelapse,
-                  color: Colors.red,
+                  titulo: "Kilómetros recorridos",
+                  dato: 0, //myProvider.biciusuarioUser.metrosRecorridos == null
+                      //? 0
+                      //: myProvider.biciusuarioUser.metrosRecorridos.toDouble(),
+                  unidades: "km",
+                  icono: Icons.directions_run,
+                  color: Color(0xFFFF9C00),
                 ),
               ],
             ),
@@ -84,9 +98,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Row(
                   children: [
-                    OptionButton(
-                      svg: "assets/alarm.svg",
-                      texto: "Botón de pánico",
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/Arboles');
+                      },
+                      child: OptionButton(
+                        svg: "assets/alarm.svg",
+                        texto: "Botón de pánico",
+                      ),
                     ),
                   ],
                 ),
@@ -121,7 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: Theme.of(context)
                                       .textTheme
                                       .headline5
-                                      .copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                      .copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold),
                                 )
                               ],
                             ),

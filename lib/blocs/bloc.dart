@@ -1,15 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:movelo/Api/apiResponse.dart';
+import 'package:movelo/models/arbol.dart';
 import 'package:movelo/models/biciusuario.dart';
-import 'package:movelo/models/empresa.dart';
 import 'package:movelo/models/registroGeografico.dart';
 import 'package:movelo/models/user.dart';
 import 'package:movelo/providers/estadoGlobal.dart';
 import 'package:movelo/resources/respositoryAll.dart';
 import 'package:provider/provider.dart';
+import 'package:rxdart/rxdart.dart';
 
 class Bloc {
   final _repository = RepositoryAll();
+  final _arbolesUsuarioFetcher = PublishSubject<ApiResponse<ArbolModel>>();
+  final _todosArbolesFetcher =
+      PublishSubject<ApiResponse<ArbolModel>>();
 
   Future iniciarSesion(
       String correo, String contrasena, BuildContext context) async {
@@ -61,7 +66,6 @@ class Bloc {
       user = await _repository.iniciarSesion(mail,
           password); // El código es muy parecido, sólo cambian las entidades
     } on Exception {
-      throw Exception();
     }
     return user;
   }
@@ -76,4 +80,28 @@ class Bloc {
     }
     return user;
   }
+
+  //Arboles
+  obtenerTodosArboles(BuildContext context) async {
+    try {
+      ArbolModel arbol =
+          await _repository.obtenerTodosArboles();
+      _todosArbolesFetcher.sink.add(ApiResponse.completed(arbol));
+    } on Exception {
+      _todosArbolesFetcher.sink.add(ApiResponse.error());
+    }
+  }
+
+  obtenerArbolesUser(String correo, BuildContext context) async {
+    try {
+      ArbolModel arbol =
+          await _repository.obtenerArbolesUser(correo);
+      _arbolesUsuarioFetcher.sink.add(ApiResponse.completed(arbol));
+    } on Exception {
+      _arbolesUsuarioFetcher.sink.add(ApiResponse.error());
+    }
+  }
+
+   Stream<ApiResponse<ArbolModel>> get arbolesUser =>
+      _arbolesUsuarioFetcher.stream;
 }

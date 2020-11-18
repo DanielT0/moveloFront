@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:movelo/providers/estadoGlobal.dart';
 import 'package:movelo/ui/home.dart';
 import 'package:movelo/ui/homeScreen.dart';
+import 'package:movelo/ui/interfazArboles.dart';
 import 'package:movelo/ui/maps.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
           '/': (context) => Home(), // Iniciamos con Home (ui/screens/home.dart)
           '/Maps': (context) => Maps(),
           '/HomeScreen': (context) => HomeScreen(),
+          '/Arboles': (context) => ArbolesUsuario(),
         },
       ),
     );

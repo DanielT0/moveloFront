@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:movelo/models/arbol.dart';
 import 'package:movelo/models/biciusuario.dart';
 import 'package:movelo/models/empresa.dart';
+import 'package:movelo/ui/maps.dart';
 
 class EstadoGlobal with ChangeNotifier {
 //Creamos una claSe "EstadoGlobal" y le agregamos las capacidades de Change Notifier.
@@ -8,6 +10,43 @@ class EstadoGlobal with ChangeNotifier {
       _userBiciusuario; //Objeto que representa al jugador que ha iniciado sesión
   Empresa _userEmpresa; //Objeto que representa al admin que ha iniciado sesión
   String _tipo; // Sabremos el tipo de usuario que es
+  double _huellaCarro=404/1.6034;
+  double _huellaBici=0.01;
+  double _huellaMoto=77.76306;
+  double _metaArbol=2;
+
+  double get huellaCarro => _huellaCarro;
+  double get huellaBici =>_huellaBici;
+  double get huellaMoto => _huellaMoto;
+  double get metaArbol => _metaArbol;
+
+  set metaArbol(double metaArbol){
+    _metaArbol = metaArbol;
+    notifyListeners();
+  }
+
+
+  set huellaCarro(double huella) {
+    _huellaCarro = huella;
+    notifyListeners();
+  }
+
+  set huellaMoto(double huella) {
+    _huellaMoto = huella;
+    notifyListeners();
+  }
+  set huellaBici(double huella) {
+    _huellaBici = huella;
+    notifyListeners();
+  }
+List<Arbol> _arbolesUsuario; 
+
+  List<Arbol> get arbolesUsuario => _arbolesUsuario;
+  set arbolesUsuario(List<Arbol> arboles) {
+    _arbolesUsuario=arboles;
+    notifyListeners();
+  }
+
   bool _errorServidor =
       false; //True si existe un error de servidor, false si no
 
