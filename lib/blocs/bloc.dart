@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:movelo/models/biciusuario.dart';
 import 'package:movelo/models/empresa.dart';
+import 'package:movelo/models/registroGeografico.dart';
 import 'package:movelo/models/user.dart';
 import 'package:movelo/providers/estadoGlobal.dart';
 import 'package:movelo/resources/respositoryAll.dart';
@@ -31,15 +32,25 @@ class Bloc {
   Future registrarUsuario(Biciusuario biciusuario, BuildContext context) async {
     var myProvider = Provider.of<EstadoGlobal>(context, listen: false);
     var respuesta = false;
-    User resp = await this._repository.insertBiciusuario(biciusuario);
+    bool resp = await this._repository.insertBiciusuario(biciusuario);
     if (resp != null) {
-      Biciusuario biciuser = resp;
+      Biciusuario biciuser = biciusuario;
       myProvider.biciusuarioUser = biciuser;
       myProvider.tipo = "Biciusuario";
       respuesta = true;
     } else {
       respuesta = false;
     }
+    return respuesta;
+  }
+
+  Future<bool> enviarKmRecorridos(double km) async{
+    bool respuesta = await this._repository.enviarKmRecorridos(km);
+    return respuesta;
+  }
+
+  Future<bool> enviarRegistroRuta(List<Registro> registros) async{
+    bool respuesta = await this._repository.enviarRegistroRuta(registros);
     return respuesta;
   }
 

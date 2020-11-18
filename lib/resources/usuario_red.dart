@@ -50,7 +50,7 @@ class ProveedorUser {
   Future<User> iniciarSesion(String correo, String contrasena) async {
     User admin;
     http.Response response = await http.get(
-        'https://f93746ff603c.ngrok.io/api/bikeriders/?email=$correo&pass=$contrasena');
+        'https://bf0d59226f31.ngrok.io/api/bikeriders/?email=$correo&pass=$contrasena');
     print(response.statusCode);
     if (response.statusCode == 200) {
       // If the call to the server was successful, parse the JSON
@@ -173,6 +173,27 @@ class ProveedorUser {
       return body;
     } else {
       throw Exception('Error al conectar con el servidor');
+    }
+  }
+
+  Future<bool> enviarKmRecorridos(double km) async{
+    http.Response response = await http.get(
+        '');
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      // If the call to the server was successful, parse the JSON
+      if (json.decode(response.body) == false) {
+        return false;
+      } else {
+        return true; 
+      }
+    }
+    else if(response.statusCode==404){
+      return null;
+    } else {
+      // If that call was not successful, throw an error.
+      print("Error");
+      throw Exception('Failed to load post');
     }
   }
 }

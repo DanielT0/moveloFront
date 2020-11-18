@@ -263,7 +263,7 @@ class _HomeState extends State<Home> {
                     ),
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/Maps');
+                      Navigator.pushNamed(context, '/HomeScreen');
                     },
                     width: 120,
                   )
@@ -454,11 +454,12 @@ class _HomeState extends State<Home> {
                 Container(
                   child: GestureDetector(
                     onTap: () {
-                      if (_current != 0) {
-                        _presionaOpcion(0);
-                      } else {
-                        _presionaOpcion(1);
-                      }
+                      irAHome();
+                      //if (_current != 0) {
+                      //  _presionaOpcion(0);
+                     // } else {
+                       // _presionaOpcion(1);
+                     // }
                     },
                     child: Container(
                       margin: EdgeInsets.all(32),
@@ -538,7 +539,7 @@ class _HomeState extends State<Home> {
                     BotonPrincipal(
                       btnText: "Iniciar sesión",
                       activo: _enableSignButton,
-                      funcion: () => this.irAHome(),
+                      funcion: () => this.iniciarSesion(context)
                     ),
                     SizedBox(
                       height: 20,

@@ -5,7 +5,10 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_map_polyutil/google_map_polyutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:movelo/models/registroGeografico.dart';
 import 'dart:math' show cos, sqrt, asin;
+
+import 'package:movelo/blocs/bloc.dart';
 
 class Maps extends StatefulWidget {
   @override
@@ -28,7 +31,7 @@ class _MapsState extends State<Maps> {
 
   String _startAddress = '';
   String _destinationAddress = '';
-  String _placeDistance;
+  String _placeDistance = "";
   double _distanciaRecorrida = 0;
 
   Set<Marker> markers = {};
@@ -37,6 +40,16 @@ class _MapsState extends State<Maps> {
   Map<PolylineId, Polyline> polylines = {};
   List<LatLng> polylineCoordinates = [];
   List<LatLng> polylineCoordinates2 = [];
+  List<Registro> registrosGeograficos = [];
+  Bloc bloc = new Bloc();
+
+  bool _rutaEscogida = false;
+  bool _navegarRuta = false;
+  bool _puntoInicioView = false;
+
+  Timer _timer;
+
+  double containerSize = 110;
 
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -246,7 +259,6 @@ class _MapsState extends State<Maps> {
 
         setState(() {
           _placeDistance = totalDistance.toStringAsFixed(2);
-          print('DISTANCE: $_placeDistance km');
         });
 
         return true;
@@ -272,20 +284,51 @@ class _MapsState extends State<Maps> {
   }
 
   Future avanzarRuta() async {
+    _getCurrentLocation();
+    bool dentro = await GoogleMapPolyUtil.isLocationOnPath(
+        point: LatLng(_currentPosition.latitude, _currentPosition.longitude),
+        polygon: polylineCoordinates,
+        tolerance: 200);
     double distance = await _geolocator.distanceBetween(
             _currentPosition.latitude,
             _currentPosition.longitude,
             _lastPosition.latitude,
             _lastPosition.longitude) /
         1000;
+    if (!dentro) {
+      if (polylineCoordinates.isNotEmpty) {
+        markers.clear();
+        polylineCoordinates.clear();
+
+        Marker destinationMarker = Marker(
+          markerId: MarkerId('$_destinationPosition'),
+          position: LatLng(
+            _destinationPosition.latitude,
+            _destinationPosition.longitude,
+          ),
+          infoWindow: InfoWindow(
+            title: 'Destino',
+            snippet: _destinationAddress,
+          ),
+          icon: BitmapDescriptor.defaultMarker,
+        );
+
+        // Adding the markers to the list
+        markers.add(destinationMarker);
+      }
+      _createPolylines(_currentPosition, _destinationPosition);
+    }
     setState(() {
       if (distance > 0.0043) {
         _distanciaRecorrida += distance;
         polylineCoordinates2
             .add(LatLng(_currentPosition.latitude, _currentPosition.longitude));
+        registrosGeograficos.add(Registro(_currentPosition.latitude,
+            _currentPosition.longitude, DateTime.now().toString()));
       }
       print("$distance la distancia recorrida es 0000: $_distanciaRecorrida");
     });
+    //this.bloc.enviarKmRecorridos(_distanciaRecorrida);
   }
 
   _createPolylines(Position start, Position destination) async {
@@ -308,52 +351,32 @@ class _MapsState extends State<Maps> {
       polylineId: id,
       color: Colors.red.withOpacity(.4),
       points: polylineCoordinates,
-      width: 3,
+      width: 10,
     );
     polylines[id] = polyline;
   }
 
   Future empezarRuta() async {
-    bool dentro = await GoogleMapPolyUtil.isLocationOnPath(
-          point: LatLng(_currentPosition.latitude, _currentPosition.longitude),
-          polygon: polylineCoordinates,
-          tolerance: 40);
-    _geolocator
-        .getPositionStream(LocationOptions(accuracy: LocationAccuracy.medium))
-        .listen((Position position){
-      if (!dentro) {
-        polylineCoordinates.clear();
-        this._createPolylines(position, _destinationPosition);
-      }
-      setState(() {
-        _currentPosition = position;
-        mapController.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 20.0,
-            ),
-          ),
-        );
-      });
-      print(_currentPosition.latitude.toString() +
-          ',' +
-          _currentPosition.longitude.toString()); // ok
-    });
     PolylineId id = PolylineId('pol');
     Polyline polyline = Polyline(
       polylineId: id,
       color: Colors.red,
       points: polylineCoordinates2,
-      width: 5,
+      width: 10,
     );
     polylines[id] = polyline;
 
-    Timer.periodic(Duration(seconds: 10), (timer) {
-      _lastPosition != null
-          ? this.avanzarRuta()
-          : polylineCoordinates2.add(
-              LatLng(_currentPosition.latitude, _currentPosition.longitude));
+    setState(() {
+      _navegarRuta = true;
+      _rutaEscogida = false;
+    });
+
+    _timer = new Timer.periodic(Duration(seconds: 10), (timer) {
+      if (_lastPosition != null) {
+        this.avanzarRuta();
+      } else {
+        _lastPosition = _currentPosition;
+      }
     });
     mapController.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -363,6 +386,21 @@ class _MapsState extends State<Maps> {
         ),
       ),
     );
+  }
+
+  void terminarRuta() {
+    _timer.cancel();
+    setState(() {
+      _navegarRuta = false;
+      _rutaEscogida = false;
+    });
+  }
+
+  Future enviarRegistroRuta() async {
+    if (await this.bloc.enviarRegistroRuta(registrosGeograficos)) {
+      print("Geenial");
+    } else
+      print("No tan genial");
   }
 
   @override
@@ -406,43 +444,41 @@ class _MapsState extends State<Maps> {
                   padding: const EdgeInsets.only(top: 10.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white70,
+                      color: Colors.white,
                       borderRadius: BorderRadius.all(
                         Radius.circular(20.0),
                       ),
                     ),
                     width: width * 0.9,
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 10.0, bottom: 10.0),
+                      padding: const EdgeInsets.only(top: 5.0, bottom: 15.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
-                          Text(
-                            'Puntos',
-                            style: TextStyle(fontSize: 14.0),
-                          ),
-                          SizedBox(height: 10),
-                          _textField(
-                              label: 'Inicio',
-                              hint: 'Escoge el punto de inicio',
-                              initialValue: _currentAddress,
-                              prefixIcon: Icon(Icons.looks_one),
-                              suffixIcon: IconButton(
-                                icon: Icon(Icons.my_location),
-                                onPressed: () {
-                                  startAddressController.text = _currentAddress;
-                                  _startAddress = _currentAddress;
-                                },
-                              ),
-                              controller: startAddressController,
-                              width: width,
-                              locationCallback: (String value) {
-                                setState(() {
-                                  _startAddress = value;
-                                });
-                              },
-                              multiplier: 0.8),
+                          _puntoInicioView
+                              ? _textField(
+                                  label: 'Inicio',
+                                  hint: 'Escoge el punto de inicio',
+                                  initialValue: _currentAddress,
+                                  prefixIcon: Icon(Icons.looks_one),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(Icons.my_location),
+                                    onPressed: () {
+                                      startAddressController.text =
+                                          _currentAddress;
+                                      _startAddress = _currentAddress;
+                                    },
+                                  ),
+                                  controller: startAddressController,
+                                  width: width,
+                                  locationCallback: (String value) {
+                                    setState(() {
+                                      _startAddress = value;
+                                    });
+                                  },
+                                  multiplier: 0.8)
+                              : Container(),
                           SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -451,7 +487,7 @@ class _MapsState extends State<Maps> {
                                   label: 'Destino',
                                   hint: 'Escoge el punto de destino',
                                   initialValue: '',
-                                  prefixIcon: Icon(Icons.looks_two),
+                                  prefixIcon: Icon(Icons.location_city),
                                   controller: destinationAddressController,
                                   width: width,
                                   locationCallback: (String value) {
@@ -476,8 +512,15 @@ class _MapsState extends State<Maps> {
                                               polylines.clear();
                                             if (polylineCoordinates.isNotEmpty)
                                               polylineCoordinates.clear();
-                                            _placeDistance = null;
+                                            _placeDistance = "Calculando";
+                                            _rutaEscogida = true;
                                           });
+
+                                          FocusScopeNode currentFocus =
+                                              FocusScope.of(context);
+                                          if (!currentFocus.hasPrimaryFocus) {
+                                            currentFocus.unfocus();
+                                          }
 
                                           _calculateDistance()
                                               .then((isCalculated) {
@@ -518,17 +561,6 @@ class _MapsState extends State<Maps> {
                                 ),
                               ),
                             ],
-                          ),
-                          SizedBox(height: 10),
-                          Visibility(
-                            visible: _placeDistance == null ? false : true,
-                            child: Text(
-                              'Distancia aproximada: $_placeDistance km',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -580,44 +612,143 @@ class _MapsState extends State<Maps> {
                             ),
                           ),
                         ),
-                        Container(
-                          height: 110,
-                          width: MediaQuery.of(context).size.width * 0.95,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(8.0),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              FlatButton(
-                                onPressed: empezarRuta,
-                                child: Container(
-                                  height: 50,
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(30)),
-                                  child: Center(
-                                    child: Text(
-                                      "Empezar",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyText1
-                                          .copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold),
-                                    ),
+                        _rutaEscogida
+                            ? Container(
+                                height: 110,
+                                width: MediaQuery.of(context).size.width * 0.95,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(8.0),
                                   ),
                                 ),
-                              ),
-                              Text("Distancia recorrida: " +
-                                  _distanciaRecorrida.toStringAsFixed(2) +
-                                  "km"),
-                            ],
-                          ),
-                        ),
+                                child: Row(
+                                  children: [
+                                    FlatButton(
+                                      onPressed: empezarRuta,
+                                      child: Container(
+                                        height: 50,
+                                        width: 100,
+                                        decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius:
+                                                BorderRadius.circular(30)),
+                                        child: Center(
+                                          child: Text(
+                                            "Empezar",
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyText1
+                                                .copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          " $_placeDistance km",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline6
+                                              .copyWith(
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.bold),
+                                        ),
+                                        Text("Distancia aproximada"),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Container(),
+                        _navegarRuta
+                            ? GestureDetector(
+                                onDoubleTap: () {
+                                  setState(() {
+                                    if (containerSize == 110) {
+                                      containerSize = 300;
+                                    } else {
+                                      containerSize = 110;
+                                    }
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: Duration(milliseconds: 500),
+                                  height: containerSize,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.95,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8.0),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      FlatButton(
+                                        onPressed: () {
+                                          enviarRegistroRuta();
+                                          markers.clear();
+                                          polylines.clear();
+                                          polylineCoordinates.clear();
+                                          terminarRuta();
+                                        },
+                                        child: Container(
+                                          height: 50,
+                                          width: 100,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(30),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              "Terminar",
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyText1
+                                                  .copyWith(
+                                                      color: Colors.green,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _distanciaRecorrida
+                                                    .toStringAsFixed(2) +
+                                                "km",
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headline6
+                                                .copyWith(
+                                                    color: Colors.black,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                          ),
+                                          Text("Distancia recorrida "),
+                                        ],
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : Container(),
                       ],
                     ),
                   ),
