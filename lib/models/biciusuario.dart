@@ -16,7 +16,7 @@ class Biciusuario extends Componente implements User{
   double _huellaCarbonoAcumulada;
   List<PuntoGeografico> _arbolesContribuidos;
   int _metrosNoPlantados;
-  int _metrosRecorridos;
+  double _metrosRecorridos;
 
   Biciusuario(this._id, this._cc, this._correo, this._password, this._tipo, this._nombre, this._direccion, this._telefono,
       this._huellaCarbonoAcumulada, this._metrosNoPlantados, this._metrosRecorridos); //Constructor
@@ -46,7 +46,7 @@ class Biciusuario extends Componente implements User{
   String get telefono => this._telefono;
   double get huellaCarbonoAcumulada => this._huellaCarbonoAcumulada;
   int get metrosNoPlantados => this._metrosNoPlantados;
-  int get metrosRecorridos => this._metrosRecorridos;
+  double get metrosRecorridos => this._metrosRecorridos;
   List<PuntoGeografico> get arbolesContribuidos => this._arbolesContribuidos;
   List<Bicicleta> get bicicletas => this._bicicletas;
 
@@ -61,7 +61,7 @@ class Biciusuario extends Componente implements User{
   set telefono(String telefono) => this._telefono = telefono;
   set huellaCarbonoAcumulada(double huellaCarbonoAcumulada) => this._huellaCarbonoAcumulada = huellaCarbonoAcumulada;
   set metrosNoPlantados(int metrosNoPLantados) => this._metrosNoPlantados = metrosNoPLantados;
-  set metrosRecorridos(int metrosRecorridos) => this._metrosRecorridos = metrosRecorridos;
+  set metrosRecorridos(double metrosRecorridos) => this._metrosRecorridos = metrosRecorridos;
 
   void addBicicleta(Bicicleta bicicleta){
     this._bicicletas.add(bicicleta);

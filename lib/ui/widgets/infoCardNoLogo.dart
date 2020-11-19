@@ -55,7 +55,7 @@ class InfoCardNumbersNoIcon extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text: dato.toStringAsFixed(3),
+                            text: dato.toStringAsFixed(2),
                             style:
                                 Theme.of(context).textTheme.headline4.copyWith(
                                       fontWeight: FontWeight.bold,

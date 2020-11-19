@@ -10,7 +10,7 @@ class ProveedorArboles {
     var resp;
     var tagObjsJson;
     http.Response response = await http.get(
-        'https://bf0d59226f31.ngrok.io/api/arboles?email=$correo');
+        'https://debe07c92ba3.ngrok.io/api/arboles?email=$correo');
     print(response.body);
     print("hoooola");
     if (response.statusCode == 200) {
@@ -33,7 +33,7 @@ class ProveedorArboles {
   Future<ArbolModel> obtenerTodosArboles() async {
     var resp;
     http.Response response =
-        await http.get('https://bf0d59226f31.ngrok.io/api/arboles/todos');
+        await http.get('https://debe07c92ba3.ngrok.io/api/arboles/todos');
     print(response.body);
     if (response.statusCode == 200) {
       // If the call to the server was successful, parse the JSON
@@ -41,6 +41,24 @@ class ProveedorArboles {
         resp = null;
       } else
         resp = ArbolModel.fromJson(json.decode(response.body));
+      return resp;
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load post');
+    }
+  }
+
+  Future<bool> agregarArbolUsuario(String correo, double precio) async {
+    var resp;
+    http.Response response =
+        await http.get('https://debe07c92ba3.ngrok.io/api/bikeriders/addToUser/?correo=$correo&precio=$precio');
+    print(response.body);
+    if (response.statusCode == 202) {
+      // If the call to the server was successful, parse the JSON
+      if (json.decode(response.body) == false) {
+        resp = false;
+      } else
+        resp = true;
       return resp;
     } else {
       // If that call was not successful, throw an error.

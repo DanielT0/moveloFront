@@ -18,8 +18,8 @@ class RepositoryAll {
   Future<bool> enviarKmRecorridos(double km) =>
       gestorUsuarios.enviarKmRecorridos(km);
 
-  Future<bool> enviarRegistroRuta(List<Registro> registros) =>
-      gestorBiciusuarios.enviarRegistrosRuta(registros);
+  Future<bool> enviarRegistroRuta(List<Registro> registros, double distanciaRecorrida, String correo) =>
+      gestorBiciusuarios.enviarRegistrosRuta(registros, distanciaRecorrida, correo);
 
   Future<User> obtenerUsuarioCorreo(String correo) =>
       gestorUsuarios.obtenerUsuarioCorreo(correo);
@@ -37,4 +37,7 @@ class RepositoryAll {
 
   Future<ArbolModel> obtenerTodosArboles() =>
       gestorArboles.obtenerTodosArboles();
+
+  Future<bool>anadirArbolUser(String correo, double precio) =>
+      gestorArboles.agregarArbolUsuario(correo, precio);
 }

@@ -1,3 +1,23 @@
+class RegistroModel {
+  List<Registro> _registros= [];
+  double totalDistance;
+
+  RegistroModel(this._registros, this.totalDistance);
+  
+  RegistroModel.fromJson(Map<String, dynamic> parsedJson) {
+    print(parsedJson['registros'].length);
+    List<Registro> temp = [];
+    for (int i = 0; i < parsedJson['registros'].length; i++) {
+      Registro registro = Registro.fromJsonn(parsedJson['registro'][i]);
+      temp.add(registro);
+    }
+    _registros = temp;
+  }
+
+  List<Registro> get registros=> _registros;
+}
+
+
 class Registro {
   double _long;
   double _lat;
@@ -11,6 +31,12 @@ class Registro {
     this._long = parsedJson['longitude'];
     this._time = parsedJson['timeStamp'];
   }
+
+  Registro.fromJsonn(resultado){
+    this._lat=resultado['latitude'];
+    this._long= resultado['longitude'];
+    this._time = resultado['timeStamp'];
+  } //Constructor
 
   Map toJson() => {
         'latitude': _lat,

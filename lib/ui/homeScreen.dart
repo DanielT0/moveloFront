@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,6 +7,7 @@ import 'package:movelo/blocs/bloc.dart';
 import 'package:movelo/models/arbol.dart';
 import 'package:movelo/providers/estadoGlobal.dart';
 import 'package:movelo/ui/constantes.dart';
+import 'package:movelo/ui/widgets/actionCard.dart';
 import 'package:movelo/ui/widgets/infoCard.dart';
 import 'package:movelo/ui/widgets/infoCardNumbers.dart';
 import 'package:movelo/ui/widgets/lineChart.dart';
@@ -19,24 +22,41 @@ class _HomeScreenState extends State<HomeScreen> {
   EstadoGlobal proveedor;
   Bloc bloc = new Bloc();
   List<Arbol> arbolesUsuario = [];
-  double numArbolesUsuario =0;
+  double numArbolesUsuario = 0;
   void irAHome() {
     Navigator.pushNamed(context, '/Maps');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    this.bloc.obtenerTodosArboles(context);
+    Timer.run(() {
+      bloc.arboles.map((object) => object.data.arboles).listen((p) {
+        print("sdud");
+        // Escuchamos al stream (que no dará dato a dato el conjunto)
+        setState(() => arbolesUsuario = p); //Le asignamos el conjunto a ligas
+        print(arbolesUsuario.length);
+        proveedor.arbolesUsuario = arbolesUsuario;
+        for (var i = 0; i < arbolesUsuario.length; i++) {
+          if (proveedor.metaArbol < arbolesUsuario[i].precio)
+            proveedor.metaArbol = arbolesUsuario[i].precio;
+          print(proveedor.metaArbol);
+          break;
+        }
+        numArbolesUsuario = arbolesUsuario.length == null
+            ? 0
+            : arbolesUsuario.length.toDouble();
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     var myProvider = Provider.of<EstadoGlobal>(context, listen: false);
     proveedor = myProvider;
-
-    bloc.arbolesUser.map((object) => object.data.arboles).listen((p) {
-      // Escuchamos al stream (que no dará dato a dato el conjunto)
-      setState(() => arbolesUsuario = p); //Le asignamos el conjunto a ligas
-      print(arbolesUsuario);
-      print(arbolesUsuario[0].nombre);
-      myProvider.arbolesUsuario = arbolesUsuario;
-      numArbolesUsuario= arbolesUsuario.length == null ? 0 : arbolesUsuario.length.toDouble();
-    });
+    double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: buildAppBar(),
       body: Column(
@@ -58,14 +78,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 InfoCardNumbers(
                   titulo: "Árboles plantados",
-                  dato: 0,// numArbolesUsuario,
+                  dato: 0, // numArbolesUsuario,
                   unidades: "árboles",
                   icono: Icons.nature,
                   color: Colors.green,
                 ),
                 InfoCardNumbers(
                   titulo: "Huella de carbono",
-                  dato: 0, //myProvider.biciusuarioUser.huellaCarbonoAcumulada ==null ? 0 :myProvider.biciusuarioUser.huellaCarbonoAcumulada ,
+                  dato:
+                      0, //myProvider.biciusuarioUser.huellaCarbonoAcumulada ==null ? 0 :myProvider.biciusuarioUser.huellaCarbonoAcumulada ,
                   unidades: "ton",
                   icono: Icons.fingerprint,
                   color: Colors.purple,
@@ -73,8 +94,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 InfoCard(
                   titulo: "Kilómetros recorridos",
                   dato: 0, //myProvider.biciusuarioUser.metrosRecorridos == null
-                      //? 0
-                      //: myProvider.biciusuarioUser.metrosRecorridos.toDouble(),
+                  //? 0
+                  //: myProvider.biciusuarioUser.metrosRecorridos.toDouble(),
                   unidades: "km",
                   icono: Icons.directions_run,
                   color: Color(0xFFFF9C00),
@@ -96,68 +117,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       .headline6
                       .copyWith(fontWeight: FontWeight.bold),
                 ),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/Arboles');
-                      },
-                      child: OptionButton(
-                        svg: "assets/alarm.svg",
-                        texto: "Botón de pánico",
-                      ),
-                    ),
-                  ],
-                ),
                 SizedBox(
                   height: 20,
                 ),
                 Container(
-                  height: 150,
+                  height: height / 2.8,
                   width: double.infinity,
-                  child: GestureDetector(
-                    onTap: () => irAHome(),
-                    child: Stack(
-                      alignment: Alignment.bottomLeft,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.only(
-                            left: MediaQuery.of(context).size.width * 0.4,
-                            top: 40,
-                          ),
-                          height: 130,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                                colors: [Color(0xFF60BE93), Color(0xFF1B8D59)]),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: "Crear ruta",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headline5
-                                      .copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold),
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                        Container(
-                          height: 400,
-                          width: 150,
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 15),
-                            child: SvgPicture.asset("assets/route.svg"),
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      ActionCard(
+                        width: width,
+                        foto: "assets/bycicle.jpg",
+                        accion: "Ir a mapa",
+                        subaction: "Navega en tu ciudad",
+                        funcion:()=> Navigator.pushNamed(context, '/Maps'),
+                      ),
+                      ActionCard(
+                        width: width,
+                        foto: "assets/trees.jpg",
+                        accion: "Ver árboles",
+                        subaction: "Observa lo que has plantado",
+                        funcion: ()=> Navigator.pushNamed(context, '/Arboles'),
+                      ),
+                    ],
                   ),
                 ),
               ],

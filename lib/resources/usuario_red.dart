@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:movelo/models/biciusuario.dart';
-import 'package:movelo/models/empresa.dart';
 import 'package:movelo/models/user.dart';
 import 'dart:convert';
 
 // Clase para gestionar (hacer operaciones CRUD) de datos en la base de datos, comunicandose con el servidor
 
 class ProveedorUser {
+  var variable;
   Future<User> obtenerUsuarioCedula(String cedula) async {
     print(cedula);
     var admin;
@@ -48,9 +48,11 @@ class ProveedorUser {
   }
 
   Future<User> iniciarSesion(String correo, String contrasena) async {
+    print(correo);
+    print(contrasena);
     User admin;
     http.Response response = await http.get(
-        'https://bf0d59226f31.ngrok.io/api/bikeriders/?email=$correo&pass=$contrasena');
+        'https://debe07c92ba3.ngrok.io/api/bikeriders/?email=$correo&pass=$contrasena');
     print(response.statusCode);
     if (response.statusCode == 200) {
       // If the call to the server was successful, parse the JSON
@@ -59,11 +61,13 @@ class ProveedorUser {
         return admin;
       } else {
         admin = Biciusuario.fromJson(json.decode(response.body));
+        variable=true;
         return admin;
       }
     }
     else if(response.statusCode==404){
       admin =null;
+      variable=admin;
       return admin;
     } else {
       // If that call was not successful, throw an error.

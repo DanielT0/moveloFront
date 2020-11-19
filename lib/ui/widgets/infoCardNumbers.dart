@@ -66,7 +66,7 @@ class InfoCardNumbers extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text: "$dato",
+                            text: dato.toStringAsFixed(2),
                             style:
                                 Theme.of(context).textTheme.headline4.copyWith(
                                       fontWeight: FontWeight.bold,

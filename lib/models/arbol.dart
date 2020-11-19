@@ -26,7 +26,7 @@ class Arbol {
   Arbol(resultado){
     this._idArbol=resultado['idArbol'];
     this._nombre= resultado['nombre'];
-    this._nombreCientifico = resultado['nombreCientifico'];
+    this._nombreCientifico = resultado['nombreCientifi'];
     this._precio = resultado['precio'];
   } //Constructor
 

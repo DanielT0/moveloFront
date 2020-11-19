@@ -197,7 +197,7 @@ class _HomeState extends State<Home> {
   }
 
   void irAHome() {
-    Navigator.pushNamed(context, '/Maps');
+    Navigator.pushNamed(context, '/HomeScreen');
   }
 
   void irAMapas(BuildContext context) {
@@ -453,12 +453,11 @@ class _HomeState extends State<Home> {
                 Container(
                   child: GestureDetector(
                     onTap: () {
-                      irAHome();
-                      //if (_current != 0) {
-                      // _presionaOpcion(0);
-                      //} else {
-                      // _presionaOpcion(1);
-                      // }
+                      if (_current != 0) {
+                       _presionaOpcion(0);
+                      } else {
+                       _presionaOpcion(1);
+                       }
                     },
                     child: Container(
                       margin: EdgeInsets.all(32),

@@ -13,8 +13,7 @@ import 'package:rxdart/rxdart.dart';
 class Bloc {
   final _repository = RepositoryAll();
   final _arbolesUsuarioFetcher = PublishSubject<ApiResponse<ArbolModel>>();
-  final _todosArbolesFetcher =
-      PublishSubject<ApiResponse<ArbolModel>>();
+  final _todosArbolesFetcher = PublishSubject<ApiResponse<ArbolModel>>();
 
   Future iniciarSesion(
       String correo, String contrasena, BuildContext context) async {
@@ -49,13 +48,15 @@ class Bloc {
     return respuesta;
   }
 
-  Future<bool> enviarKmRecorridos(double km) async{
+  Future<bool> enviarKmRecorridos(double km) async {
     bool respuesta = await this._repository.enviarKmRecorridos(km);
     return respuesta;
   }
 
-  Future<bool> enviarRegistroRuta(List<Registro> registros) async{
-    bool respuesta = await this._repository.enviarRegistroRuta(registros);
+  Future<bool> enviarRegistroRuta(
+      List<Registro> registros, double distancia, String correo) async {
+    bool respuesta =
+        await this._repository.enviarRegistroRuta(registros, distancia, correo);
     return respuesta;
   }
 
@@ -65,8 +66,7 @@ class Bloc {
     try {
       user = await _repository.iniciarSesion(mail,
           password); // El código es muy parecido, sólo cambian las entidades
-    } on Exception {
-    }
+    } on Exception {}
     return user;
   }
 
@@ -81,27 +81,38 @@ class Bloc {
     return user;
   }
 
+  Future<bool> anadirArbolUser(String correo, double precio) async {
+    var resp;
+    try {
+      resp = await _repository.anadirArbolUser(correo, precio);
+    } on Exception {
+      throw Exception();
+    }
+    return resp;
+  }
+
   //Arboles
   obtenerTodosArboles(BuildContext context) async {
     try {
-      ArbolModel arbol =
-          await _repository.obtenerTodosArboles();
+      ArbolModel arbol = await _repository.obtenerTodosArboles();
       _todosArbolesFetcher.sink.add(ApiResponse.completed(arbol));
     } on Exception {
       _todosArbolesFetcher.sink.add(ApiResponse.error());
     }
   }
 
-  obtenerArbolesUser(String correo, BuildContext context) async {
+  obtenerArbolesUser(String correo) async {
     try {
-      ArbolModel arbol =
-          await _repository.obtenerArbolesUser(correo);
+      ArbolModel arbol = await _repository.obtenerArbolesUser(correo);
       _arbolesUsuarioFetcher.sink.add(ApiResponse.completed(arbol));
     } on Exception {
       _arbolesUsuarioFetcher.sink.add(ApiResponse.error());
     }
   }
 
-   Stream<ApiResponse<ArbolModel>> get arbolesUser =>
+  Stream<ApiResponse<ArbolModel>> get arbolesUser =>
       _arbolesUsuarioFetcher.stream;
+
+  Stream<ApiResponse<ArbolModel>> get arboles =>
+      _todosArbolesFetcher.stream;
 }

@@ -13,7 +13,7 @@ class EstadoGlobal with ChangeNotifier {
   double _huellaCarro=404/1.6034;
   double _huellaBici=0.01;
   double _huellaMoto=77.76306;
-  double _metaArbol=2;
+  double _metaArbol=0;
 
   double get huellaCarro => _huellaCarro;
   double get huellaBici =>_huellaBici;

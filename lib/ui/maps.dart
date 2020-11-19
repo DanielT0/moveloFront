@@ -5,6 +5,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_map_polyutil/google_map_polyutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:movelo/models/arbol.dart';
 import 'package:movelo/models/registroGeografico.dart';
 import 'dart:math' show cos, sqrt, asin;
 
@@ -53,6 +54,8 @@ class _MapsState extends State<Maps> {
   bool _navegarRuta = false;
   bool _puntoInicioView = false;
   bool _huellaCarbono = false;
+
+  List<Arbol> arbolesUsuario = [];
 
   Timer _timer;
 
@@ -383,38 +386,53 @@ class _MapsState extends State<Maps> {
       _rutaEscogida = false;
     });
 
-    _timer = new Timer.periodic(Duration(seconds: 10), (timer) {
+    _timer = new Timer.periodic(Duration(seconds: 10), (timer) async{
       if (_lastPosition != null) {
         this.avanzarRuta();
+
+        if (proveedor.metaArbol <= (_distanciaRecorrida)) {
+          print("igvygbuhgvfctvygbuhgvf");
+          var resp = await bloc.anadirArbolUser(
+              proveedor.biciusuarioUser.correo, proveedor.metaArbol);
+          bloc.arboles.map((object) => object.data.arboles).listen((p) {
+            // Escuchamos al stream (que no dará dato a dato el conjunto)
+            setState(
+                () => arbolesUsuario = p); //Le asignamos el conjunto a ligas
+            proveedor.arbolesUsuario = arbolesUsuario;
+            for (var i = 0; i < arbolesUsuario.length; i++) {
+              if (proveedor.metaArbol < arbolesUsuario[i].precio)
+                proveedor.metaArbol = arbolesUsuario[i].precio;
+              break;
+            }
+          });
+          if (resp) {
+            Alert(
+                    context: context,
+                    title: ('Listo!'),
+                    buttons: [
+                      DialogButton(
+                        color: Colors.green,
+                        child: Text(
+                          'Vale',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        width: 120,
+                      )
+                    ],
+                    type: AlertType.success,
+                    desc: 'Se ha agregado un árbol a tus árboles por plantar')
+                .show();
+            this.bloc.obtenerArbolesUser(proveedor.biciusuarioUser.correo);
+          }
+        }
       } else {
         _lastPosition = _currentPosition;
       }
     });
 
-    if (proveedor.metaArbol <= (_distanciaRecorrida)) {
-      setState(() {
-        proveedor.metaArbol += 200;
-      });
-      Alert(
-              context: context,
-              title: ('Listo!'),
-              buttons: [
-                DialogButton(
-                  color: Colors.green,
-                  child: Text(
-                    'Vale',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  width: 120,
-                )
-              ],
-              type: AlertType.success,
-              desc: 'Se ha agregado un árbol a tus árboles por plantar')
-          .show();
-    }
     mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -435,8 +453,28 @@ class _MapsState extends State<Maps> {
   }
 
   Future enviarRegistroRuta() async {
-    if (await this.bloc.enviarRegistroRuta(registrosGeograficos)) {
-      print("Geenial");
+    bool funciona = await this.bloc.enviarRegistroRuta(registrosGeograficos,
+        _distanciaRecorrida, proveedor.biciusuarioUser.correo);
+    if (funciona) {
+      Alert(
+              context: context,
+              title: ('Listo!'),
+              buttons: [
+                DialogButton(
+                  color: Colors.green,
+                  child: Text(
+                    'Gracias',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  width: 120,
+                )
+              ],
+              type: AlertType.success,
+              desc: 'Se ha registrado tu ruta')
+          .show();
     } else
       print("No tan genial");
   }
@@ -837,30 +875,7 @@ class _MapsState extends State<Maps> {
                                         children: [
                                           FlatButton(
                                             onPressed: () {
-                                              Alert(
-                                                      context: context,
-                                                      title: ('Listo!'),
-                                                      buttons: [
-                                                        DialogButton(
-                                                          color: Colors.green,
-                                                          child: Text(
-                                                            'Gracias',
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 16),
-                                                          ),
-                                                          onPressed: () {
-                                                            Navigator.pop(
-                                                                context);
-                                                          },
-                                                          width: 120,
-                                                        )
-                                                      ],
-                                                      type: AlertType.success,
-                                                      desc:
-                                                          'Se ha registrado tu ruta')
-                                                  .show();
+                                              enviarRegistroRuta();
                                               markers.clear();
                                               polylines.clear();
                                               polylineCoordinates.clear();

@@ -13,7 +13,7 @@ class ProveedorBiciusuarios {
     //Y aquí nos comunicamos con la base de datos
     http.Response response = await http.post(
         //Usamos la extensión http de dart, que nos permite hacer posts y gets en el servidor
-        'https://bf0d59226f31.ngrok.io/api/bikeriders', //Insertamos el url de donde está la interacción con la base de datos (los insert, delete), o stored procedures
+        'https://debe07c92ba3.ngrok.io/api/bikeriders', //Insertamos el url de donde está la interacción con la base de datos (los insert, delete), o stored procedures
         body: jsonEncode(
           {
             //En el caso de post, al utilizar php, asignamos los datos que se necesitan para hacer la transacción con la base de datos
@@ -45,12 +45,12 @@ class ProveedorBiciusuarios {
     }
   }
 
-  Future<bool> enviarRegistrosRuta(List<Registro> registros) async {
-    
-    var jso = jsonEncode(registros.map((e) => e.toJson()).toList());
+  Future<bool> enviarRegistrosRuta(List<Registro> registros, double distanciaRecorrida, String correo) async {
+    var map = { "points" : registros , "totalDistance" : distanciaRecorrida, "email": correo};
+    var jso = jsonEncode(map);
     http.Response response = await http.post(
         //Usamos la extensión http de dart, que nos permite hacer posts y gets en el servidor
-        'https://bf0d59226f31.ngrok.io/api/routes', //Insertamos el url de donde está la interacción con la base de datos (los insert, delete), o stored procedures
+        'https://debe07c92ba3.ngrok.io/api/routes', //Insertamos el url de donde está la interacción con la base de datos (los insert, delete), o stored procedures
         body: jso,
         headers: {"Content-Type": "application/json"});
     String body = response
@@ -58,10 +58,10 @@ class ProveedorBiciusuarios {
     print(body);
     if (response.statusCode == 201) {
       //statusCode!= 200... Hubo un error :c
-      if (json.decode(response.body) == false) {
-        return false;
-      } else {
+      if (body=="la ruta fue guardada satisfactoriamente") {
         return true;
+      } else {
+        return false;
       } // Si el sistema llega hasta acá, bien, se comunicó con el servidor, este devolverá un error o nada(no hubo errores), pero eso ya depende del código de acceso a la bd (puro php y mysql)
     }
     if (response.statusCode == 409) {

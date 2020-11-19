@@ -19,7 +19,7 @@ class _ArbolesUsuarioState extends State<ArbolesUsuario> {
   Widget build(BuildContext context) {
     var myProvider = Provider.of<EstadoGlobal>(context, listen: false);
     proveedor = myProvider;
-    bloc.obtenerArbolesUser(myProvider.biciusuarioUser.correo, context);
+    bloc.obtenerArbolesUser(myProvider.biciusuarioUser.correo);
     return opcionVista();
   }
 
@@ -27,19 +27,21 @@ class _ArbolesUsuarioState extends State<ArbolesUsuario> {
     return Scaffold(
       body: Column(
         children: <Widget>[
+          SizedBox(
+            height: 40,
+          ),
           Align(
             alignment: Alignment.centerLeft,
             child: FlatButton(
               onPressed: () {},
               child: Text(
                 'Árboles del usuario',
-                style: TextStyle(
-                    color: Colors.green, decoration: TextDecoration.underline),
+                style: TextStyle(color: Colors.black, fontSize: 18),
               ),
             ),
           ),
           SizedBox(
-            height: MediaQuery.of(context).size.height*0.8,
+            height: MediaQuery.of(context).size.height * 0.8,
             child: StreamBuilder(
               stream: bloc.arbolesUser,
               builder:
